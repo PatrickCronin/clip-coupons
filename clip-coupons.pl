@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 use Modern::Perl;
 
@@ -57,6 +57,7 @@ sub run {
     my $self = shift;
     
     $self->login;
+    $self->maybe_activate_rewards;
     $self->clip_unclipped_coupons;
     $self->logout;
 }
@@ -67,11 +68,26 @@ sub login {
     $self->_mech->get('https://www.hannaford.com/login');
     $self->_mech->submit_form(
         with_fields => {
-            userName        => $self->_creds->[0],
-            password  => $self->_creds->[1],
+            userName => $self->_creds->[0],
+            password => $self->_creds->[1],
         },
     );
     $self->_mech->submit;
+}
+
+sub maybe_activate_rewards {
+    my $self = shift;
+
+    $self->_mech->get('/includes/myaccount_include_rewards.jsp?location=my%20account%20layer');
+    my $link = $self->_mech->find_link( id => 'activateRewards' );
+
+    if ($link) {
+        print "Activating rewards.\n";
+        $self->_mech->get( $link->url() );
+    }
+    else {
+        print "No rewards to activate.\n";
+    }
 }
 
 sub clip_unclipped_coupons {
